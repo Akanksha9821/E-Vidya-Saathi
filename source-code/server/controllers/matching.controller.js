@@ -1,7 +1,114 @@
+const User = require('../models/User');
+const Course = require('../models/Course');
 const Interest = require('../models/Interest');
-const Event = require('../models/Event');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+
+// @desc    Get student-course matches
+// @route   GET /api/matching/student/:studentId
+// @access  Private
+exports.getStudentMatches = asyncHandler(async (req, res, next) => {
+  const student = await User.findById(req.params.studentId);
+
+  if (!student) {
+    return next(new ErrorResponse(`Student not found with id of ${req.params.studentId}`, 404));
+  }
+
+  // Get student's interests
+  const interests = await Interest.find({ user: student._id })
+    .populate('course');
+
+  // Get recommended courses based on interests
+  const recommendedCourses = await Course.find({
+    _id: { $nin: interests.map(i => i.course._id) },
+    category: { $in: interests.map(i => i.course.category) }
+  }).limit(5);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      interests: interests.map(i => i.course),
+      recommended: recommendedCourses
+    }
+  });
+});
+
+// @desc    Get course-student matches
+// @route   GET /api/matching/course/:courseId
+// @access  Private/Faculty
+exports.getCourseMatches = asyncHandler(async (req, res, next) => {
+  const course = await Course.findById(req.params.courseId);
+
+  if (!course) {
+    return next(new ErrorResponse(`Course not found with id of ${req.params.courseId}`, 404));
+  }
+
+  // Get students interested in this course
+  const interestedStudents = await Interest.find({ course: course._id })
+    .populate('user');
+
+  // Get recommended students based on course requirements
+  const recommendedStudents = await User.find({
+    _id: { $nin: interestedStudents.map(i => i.user._id) },
+    role: 'student',
+    interests: { $in: [course.category] }
+  }).limit(5);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      interested: interestedStudents.map(i => i.user),
+      recommended: recommendedStudents
+    }
+  });
+});
+
+// @desc    Get job-student matches
+// @route   GET /api/matching/job/:jobId
+// @access  Private/Faculty
+exports.getJobMatches = asyncHandler(async (req, res, next) => {
+  const job = await Job.findById(req.params.jobId);
+
+  if (!job) {
+    return next(new ErrorResponse(`Job not found with id of ${req.params.jobId}`, 404));
+  }
+
+  // Get students who match job requirements
+  const matchingStudents = await User.find({
+    role: 'student',
+    skills: { $in: job.requiredSkills },
+    'education.degree': { $in: job.requiredEducation }
+  }).limit(10);
+
+  res.status(200).json({
+    success: true,
+    count: matchingStudents.length,
+    data: matchingStudents
+  });
+});
+
+// @desc    Get student-job matches
+// @route   GET /api/matching/student/:studentId/jobs
+// @access  Private/Student
+exports.getStudentJobMatches = asyncHandler(async (req, res, next) => {
+  const student = await User.findById(req.params.studentId);
+
+  if (!student) {
+    return next(new ErrorResponse(`Student not found with id of ${req.params.studentId}`, 404));
+  }
+
+  // Get jobs matching student's profile
+  const matchingJobs = await Job.find({
+    requiredSkills: { $in: student.skills },
+    requiredEducation: { $in: [student.education.degree] }
+  }).limit(10);
+
+  res.status(200).json({
+    success: true,
+    count: matchingJobs.length,
+    data: matchingJobs
+  });
+});
 
 // @desc    Get student interests
 // @route   GET /api/matching/interests

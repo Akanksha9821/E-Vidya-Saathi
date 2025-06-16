@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { getCurrentUser, initialize } from './features/auth/authSlice';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -65,7 +66,17 @@ const theme = createTheme({
 });
 
 function App() {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isInitialized } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getCurrentUser());
+    dispatch(initialize());
+  }, [dispatch]);
+
+  if (!isInitialized) {
+    return <div>Loading...</div>;
+  }
 
   const getDashboard = () => {
     if (!isAuthenticated) return <Navigate to="/login" />;
@@ -88,79 +99,34 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+          <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
 
           {/* Protected Routes */}
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={getDashboard()} />
             
             {/* Course Routes */}
-            <Route path="courses" element={<PrivateRoute><Courses /></PrivateRoute>} />
-            <Route path="courses/:id" element={<PrivateRoute><CourseDetails /></PrivateRoute>} />
-            <Route path="courses/:courseId/attendance" element={
-              <PrivateRoute>
-                <Layout>
-                  <AttendanceList />
-                </Layout>
-              </PrivateRoute>
-            } />
+            <Route path="courses" element={<Courses />} />
+            <Route path="courses/:id" element={<CourseDetails />} />
+            <Route path="courses/:courseId/attendance" element={<AttendanceList />} />
             
             {/* Attendance Routes */}
-            <Route path="attendance" element={
-              <PrivateRoute>
-                <Layout>
-                  <StudentAttendance />
-                </Layout>
-              </PrivateRoute>
-            } />
+            <Route path="attendance" element={<StudentAttendance />} />
             
             {/* Event Routes */}
-            <Route path="events" element={
-              <PrivateRoute>
-                <Layout>
-                  <EventList />
-                </Layout>
-              </PrivateRoute>
-            } />
-            <Route path="events/:eventId" element={
-              <PrivateRoute>
-                <Layout>
-                  <EventDetails />
-                </Layout>
-              </PrivateRoute>
-            } />
+            <Route path="events" element={<EventList />} />
+            <Route path="events/:eventId" element={<EventDetails />} />
             
             {/* Placement Routes */}
-            <Route path="placements" element={
-              <PrivateRoute>
-                <Layout>
-                  <JobList />
-                </Layout>
-              </PrivateRoute>
-            } />
-            <Route path="placements/:jobId" element={
-              <PrivateRoute>
-                <Layout>
-                  <JobDetails />
-                </Layout>
-              </PrivateRoute>
-            } />
+            <Route path="placements" element={<JobList />} />
+            <Route path="placements/:jobId" element={<JobDetails />} />
 
             {/* Matching Routes */}
-            <Route
-              path="matching"
-              element={
-                <PrivateRoute>
-                  <Layout>
-                    <Routes>
-                      <Route index element={<InterestPreferences />} />
-                      <Route path="recommendations" element={<EventRecommendations />} />
-                    </Routes>
-                  </Layout>
-                </PrivateRoute>
-              }
-            />
+            <Route path="matching">
+              <Route index element={<InterestPreferences />} />
+              <Route path="recommendations" element={<EventRecommendations />} />
+            </Route>
           </Route>
         </Routes>
       </Router>

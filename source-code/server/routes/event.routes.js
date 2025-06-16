@@ -14,8 +14,7 @@ const {
   registerForEvent,
   unregisterFromEvent,
   getEventRegistrations,
-  getStudentEvents,
-  getOrganizerEvents
+  getMyEvents
 } = require('../controllers/event.controller');
 
 // Public routes
@@ -25,13 +24,12 @@ router.get('/:id', getEvent);
 // Protected routes
 router.use(protect);
 
-// Student routes
-router.get('/student/registered', getStudentEvents);
+// User routes
+router.get('/my/events', getMyEvents);
 router.post('/:id/register', registerForEvent);
-router.delete('/:id/register', unregisterFromEvent);
+router.delete('/:id/unregister', unregisterFromEvent);
 
 // Organizer routes
-router.get('/organizer/events', authorize('faculty', 'admin'), getOrganizerEvents);
 router.post('/', authorize('faculty', 'admin'), createEvent);
 router.put('/:id', authorize('faculty', 'admin'), checkEventOrganizer, updateEvent);
 router.delete('/:id', authorize('faculty', 'admin'), checkEventOrganizer, deleteEvent);

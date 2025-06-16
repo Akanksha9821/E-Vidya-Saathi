@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
@@ -28,20 +28,33 @@ import { useNavigate } from 'react-router-dom';
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = React.useState(true);
-  const [stats, setStats] = React.useState({
-    courses: 0,
-    students: 0,
-    upcomingEvents: 0,
-    pendingTasks: 0
+  const [stats, setStats] = useState({
+    activeCourses: 0,
+    totalStudents: 0,
+    upcomingClasses: 0
   });
 
   useEffect(() => {
-    // TODO: Fetch faculty statistics
-    // This will be implemented when we create the respective API endpoints
-    setLoading(false);
-  }, []);
+    // Fetch faculty stats
+    const fetchStats = async () => {
+      try {
+        // This would typically be an API call
+        const mockStats = {
+          activeCourses: 4,
+          totalStudents: 120,
+          upcomingClasses: 3
+        };
+        setStats(mockStats);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, [dispatch]);
 
   if (loading) {
     return (
@@ -57,28 +70,21 @@ const FacultyDashboard = () => {
       icon: <SchoolIcon sx={{ fontSize: 40 }} />,
       description: 'Manage your courses and materials',
       path: '/courses',
-      count: stats.courses
+      count: stats.activeCourses
     },
     {
       title: 'Students',
       icon: <PeopleIcon sx={{ fontSize: 40 }} />,
       description: 'View and manage student records',
       path: '/students',
-      count: stats.students
+      count: stats.totalStudents
     },
     {
       title: 'Events',
       icon: <EventIcon sx={{ fontSize: 40 }} />,
       description: 'Create and manage events',
       path: '/events',
-      count: stats.upcomingEvents
-    },
-    {
-      title: 'Tasks',
-      icon: <AssignmentIcon sx={{ fontSize: 40 }} />,
-      description: 'View pending tasks and deadlines',
-      path: '/tasks',
-      count: stats.pendingTasks
+      count: stats.upcomingClasses
     }
   ];
 

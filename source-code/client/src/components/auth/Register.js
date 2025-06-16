@@ -33,7 +33,9 @@ const validationSchema = Yup.object({
     .required('Confirm password is required'),
   role: Yup.string()
     .oneOf(['student', 'faculty'], 'Please select a valid role')
-    .required('Role is required')
+    .required('Role is required'),
+  department: Yup.string()
+    .required('Department is required')
 });
 
 const Register = () => {
@@ -56,11 +58,13 @@ const Register = () => {
       email: '',
       password: '',
       confirmPassword: '',
-      role: ''
+      role: '',
+      department: ''
     },
     validationSchema,
     onSubmit: (values) => {
       const { confirmPassword, ...registerData } = values;
+      console.log('Form submission data:', registerData);
       dispatch(register(registerData));
     }
   });
@@ -90,7 +94,7 @@ const Register = () => {
           </Typography>
           {error && (
             <Alert severity="error" sx={{ width: '100%', mt: 2 }}>
-              {error}
+              {typeof error === 'object' ? error.message || 'Registration failed' : error}
             </Alert>
           )}
           <Box
@@ -170,6 +174,26 @@ const Register = () => {
               >
                 <MenuItem value="student">Student</MenuItem>
                 <MenuItem value="faculty">Faculty</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="department-label">Department</InputLabel>
+              <Select
+                labelId="department-label"
+                id="department"
+                name="department"
+                value={formik.values.department}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.department && Boolean(formik.errors.department)}
+                label="Department"
+              >
+                <MenuItem value="Computer Science">Computer Science</MenuItem>
+                <MenuItem value="Information Technology">Information Technology</MenuItem>
+                <MenuItem value="Electronics">Electronics</MenuItem>
+                <MenuItem value="Mechanical">Mechanical</MenuItem>
+                <MenuItem value="Civil">Civil</MenuItem>
+                <MenuItem value="Electrical">Electrical</MenuItem>
               </Select>
             </FormControl>
             <Button

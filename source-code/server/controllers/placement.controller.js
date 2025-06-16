@@ -200,6 +200,135 @@ exports.getFacultyJobs = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get all placements
+// @route   GET /api/placements
+// @access  Public
+exports.getPlacements = asyncHandler(async (req, res, next) => {
+  const placements = await Job.find({ status: 'placed' })
+    .populate('postedBy', 'name email')
+    .populate('applications.student', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: placements.length,
+    data: placements
+  });
+});
+
+// @desc    Get single placement
+// @route   GET /api/placements/:id
+// @access  Public
+exports.getPlacement = asyncHandler(async (req, res, next) => {
+  const placement = await Job.findOne({
+    _id: req.params.id,
+    status: 'placed'
+  })
+    .populate('postedBy', 'name email')
+    .populate('applications.student', 'name email');
+
+  if (!placement) {
+    return next(new ErrorResponse(`Placement not found with id of ${req.params.id}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: placement
+  });
+});
+
+// @desc    Create new placement
+// @route   POST /api/placements
+// @access  Private/Employer
+exports.createPlacement = asyncHandler(async (req, res, next) => {
+  req.body.postedBy = req.user.id;
+  req.body.status = 'placed';
+
+  const placement = await Job.create(req.body);
+
+  res.status(201).json({
+    success: true,
+    data: placement
+  });
+});
+
+// @desc    Update placement
+// @route   PUT /api/placements/:id
+// @access  Private/Employer
+exports.updatePlacement = asyncHandler(async (req, res, next) => {
+  let placement = await Job.findOne({
+    _id: req.params.id,
+    status: 'placed'
+  });
+
+  if (!placement) {
+    return next(new ErrorResponse(`Placement not found with id of ${req.params.id}`, 404));
+  }
+
+  placement = await Job.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true
+  });
+
+  res.status(200).json({
+    success: true,
+    data: placement
+  });
+});
+
+// @desc    Delete placement
+// @route   DELETE /api/placements/:id
+// @access  Private/Employer
+exports.deletePlacement = asyncHandler(async (req, res, next) => {
+  const placement = await Job.findOne({
+    _id: req.params.id,
+    status: 'placed'
+  });
+
+  if (!placement) {
+    return next(new ErrorResponse(`Placement not found with id of ${req.params.id}`, 404));
+  }
+
+  await placement.remove();
+
+  res.status(200).json({
+    success: true,
+    data: {}
+  });
+});
+
+// @desc    Get student placements
+// @route   GET /api/placements/student/placements
+// @access  Private/Student
+exports.getStudentPlacements = asyncHandler(async (req, res, next) => {
+  const placements = await Job.find({
+    'applications.student': req.user.id,
+    'applications.status': 'accepted',
+    status: 'placed'
+  }).populate('postedBy', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: placements.length,
+    data: placements
+  });
+});
+
+// @desc    Get company placements
+// @route   GET /api/placements/company/placements
+// @access  Private/Employer
+exports.getCompanyPlacements = asyncHandler(async (req, res, next) => {
+  const placements = await Job.find({
+    postedBy: req.user.id,
+    status: 'placed'
+  }).populate('applications.student', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: placements.length,
+    data: placements
+  });
+});
+
 // @desc    Update application status
 // @route   PUT /api/placements/:id/applications/:applicationId
 // @access  Private/Faculty

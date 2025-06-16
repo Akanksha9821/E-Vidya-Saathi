@@ -196,4 +196,26 @@ exports.getOrganizerEvents = asyncHandler(async (req, res, next) => {
     count: events.length,
     data: events
   });
+});
+
+// @desc    Get my events (both organized and registered)
+// @route   GET /api/events/my/events
+// @access  Private
+exports.getMyEvents = asyncHandler(async (req, res, next) => {
+  // Get events organized by the user
+  const organizedEvents = await Event.find({ organizer: req.user.id })
+    .populate('registrations.student', 'name email');
+
+  // Get events where user is registered
+  const registeredEvents = await Event.find({
+    'registrations.student': req.user.id
+  }).populate('organizer', 'name email');
+
+  res.status(200).json({
+    success: true,
+    data: {
+      organized: organizedEvents,
+      registered: registeredEvents
+    }
+  });
 }); 

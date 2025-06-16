@@ -5,25 +5,21 @@ const {
   authorize
 } = require('../middleware/auth');
 const {
-  getStudentInterests,
-  updateStudentInterests,
-  getEventRecommendations,
-  trackEventInteraction,
-  getSimilarEvents,
-  getInterestStats
+  getStudentMatches,
+  getCourseMatches,
+  getJobMatches,
+  getStudentJobMatches
 } = require('../controllers/matching.controller');
 
 // All routes are protected
 router.use(protect);
 
 // Student routes
-router.get('/interests', getStudentInterests);
-router.put('/interests', updateStudentInterests);
-router.get('/recommendations', getEventRecommendations);
-router.post('/interactions', trackEventInteraction);
+router.get('/student/:studentId', getStudentMatches);
+router.get('/student/:studentId/jobs', getStudentJobMatches);
 
 // Faculty routes
-router.get('/similar/:eventId', authorize('faculty', 'admin'), getSimilarEvents);
-router.get('/stats', authorize('faculty', 'admin'), getInterestStats);
+router.get('/course/:courseId', authorize('faculty', 'admin'), getCourseMatches);
+router.get('/job/:jobId', authorize('faculty', 'admin'), getJobMatches);
 
 module.exports = router; 

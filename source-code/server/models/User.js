@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['student', 'faculty', 'admin'],
+    enum: ['student', 'faculty', 'admin', 'employer'],
     default: 'student'
   },
   password: {
@@ -48,6 +48,25 @@ const UserSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  profile: {
+    bio: String,
+    avatar: String,
+    phone: String,
+    address: String,
+    education: [{
+      degree: String,
+      field: String,
+      institution: String,
+      year: Number
+    }],
+    skills: [String],
+    interests: [String],
+    social: {
+      linkedin: String,
+      github: String,
+      twitter: String
+    }
   }
 }, {
   toJSON: { virtuals: true },
@@ -66,11 +85,9 @@ UserSchema.pre('save', async function(next) {
 
 // Sign JWT and return
 UserSchema.methods.getSignedJwtToken = function() {
-  return jwt.sign(
-    { id: this._id, role: this.role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
-  );
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE
+  });
 };
 
 // Match user entered password to hashed password in database
@@ -78,7 +95,7 @@ UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Virtual populate for courses
+// Virtual populate
 UserSchema.virtual('courses', {
   ref: 'Course',
   localField: '_id',
@@ -86,19 +103,17 @@ UserSchema.virtual('courses', {
   justOne: false
 });
 
-// Virtual populate for events
 UserSchema.virtual('events', {
   ref: 'Event',
   localField: '_id',
-  foreignField: 'participants',
+  foreignField: 'registrations.student',
   justOne: false
 });
 
-// Virtual populate for job applications
-UserSchema.virtual('applications', {
-  ref: 'JobApplication',
+UserSchema.virtual('jobApplications', {
+  ref: 'Job',
   localField: '_id',
-  foreignField: 'student',
+  foreignField: 'applications.student',
   justOne: false
 });
 

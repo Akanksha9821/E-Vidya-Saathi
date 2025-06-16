@@ -1,34 +1,40 @@
 const mongoose = require('mongoose');
 
 const CourseSchema = new mongoose.Schema({
-  name: {
+  title: {
     type: String,
-    required: [true, 'Please add a course name'],
+    required: [true, 'Please add a course title'],
     trim: true,
-    maxlength: [100, 'Name cannot be more than 100 characters']
-  },
-  code: {
-    type: String,
-    required: [true, 'Please add a course code'],
-    unique: true,
-    trim: true,
-    maxlength: [20, 'Code cannot be more than 20 characters']
+    maxlength: [100, 'Title cannot be more than 100 characters']
   },
   description: {
     type: String,
-    required: [true, 'Please add a description'],
-    maxlength: [500, 'Description cannot be more than 500 characters']
+    required: [true, 'Please add a description']
   },
-  credits: {
-    type: Number,
-    required: [true, 'Please add number of credits'],
-    min: [1, 'Credits must be at least 1'],
-    max: [6, 'Credits cannot be more than 6']
+  category: {
+    type: String,
+    required: [true, 'Please add a category'],
+    enum: [
+      'Computer Science',
+      'Mathematics',
+      'Physics',
+      'Chemistry',
+      'Biology',
+      'Engineering',
+      'Business',
+      'Arts',
+      'Languages',
+      'Other'
+    ]
   },
-  capacity: {
+  level: {
+    type: String,
+    required: [true, 'Please add a level'],
+    enum: ['Beginner', 'Intermediate', 'Advanced']
+  },
+  duration: {
     type: Number,
-    required: [true, 'Please add course capacity'],
-    min: [1, 'Capacity must be at least 1']
+    required: [true, 'Please add a duration in weeks']
   },
   faculty: {
     type: mongoose.Schema.ObjectId,
@@ -39,29 +45,51 @@ const CourseSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User'
   }],
+  modules: [{
+    title: {
+      type: String,
+      required: [true, 'Please add a module title']
+    },
+    description: String,
+    content: String,
+    resources: [{
+      title: String,
+      type: String,
+      url: String
+    }],
+    assignments: [{
+      title: String,
+      description: String,
+      dueDate: Date,
+      submissions: [{
+        student: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'User'
+        },
+        submissionDate: Date,
+        content: String,
+        grade: Number,
+        feedback: String
+      }]
+    }]
+  }],
   schedule: {
-    day: {
-      type: String,
-      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-      required: true
-    },
-    startTime: {
-      type: String,
-      required: true
-    },
-    endTime: {
-      type: String,
-      required: true
-    },
-    room: {
-      type: String,
-      required: true
-    }
+    startDate: Date,
+    endDate: Date,
+    sessions: [{
+      day: {
+        type: String,
+        enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+      },
+      startTime: String,
+      endTime: String,
+      location: String
+    }]
   },
   status: {
     type: String,
-    enum: ['active', 'completed', 'cancelled'],
-    default: 'active'
+    enum: ['draft', 'published', 'archived'],
+    default: 'draft'
   },
   createdAt: {
     type: Date,
@@ -104,5 +132,8 @@ CourseSchema.methods.removeStudent = async function(studentId) {
   );
   await this.save();
 };
+
+// Add index for text search
+CourseSchema.index({ title: 'text', description: 'text' });
 
 module.exports = mongoose.model('Course', CourseSchema); 

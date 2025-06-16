@@ -15,40 +15,30 @@ const JobSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: [true, 'Please add a job description'],
-    maxlength: [2000, 'Description cannot be more than 2000 characters']
-  },
-  type: {
-    type: String,
-    enum: ['full-time', 'part-time', 'internship', 'contract'],
-    required: true
+    required: [true, 'Please add a job description']
   },
   location: {
     type: String,
-    required: true
+    required: [true, 'Please add a job location'],
+    trim: true
+  },
+  type: {
+    type: String,
+    required: [true, 'Please add a job type'],
+    enum: ['Full-time', 'Part-time', 'Contract', 'Internship']
   },
   salary: {
-    min: {
-      type: Number,
-      required: true
-    },
-    max: {
-      type: Number,
-      required: true
-    },
-    currency: {
-      type: String,
-      default: 'INR'
-    }
+    type: Number,
+    required: [true, 'Please add a salary range']
   },
-  requirements: [{
-    type: String,
-    required: true
-  }],
-  responsibilities: [{
-    type: String,
-    required: true
-  }],
+  requiredSkills: {
+    type: [String],
+    required: [true, 'Please add required skills']
+  },
+  requiredEducation: {
+    type: [String],
+    required: [true, 'Please add required education']
+  },
   postedBy: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
@@ -57,44 +47,28 @@ const JobSchema = new mongoose.Schema({
   applications: [{
     student: {
       type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: true
+      ref: 'User'
     },
-    status: {
-      type: String,
-      enum: ['pending', 'reviewing', 'shortlisted', 'rejected', 'accepted'],
-      default: 'pending'
-    },
-    resume: {
-      type: String,
-      required: true
-    },
-    coverLetter: String,
-    appliedAt: {
+    applicationDate: {
       type: Date,
       default: Date.now
     },
-    reviewedBy: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User'
-    },
-    reviewDate: Date,
-    reviewComment: String,
-    interviewDate: Date,
-    interviewLocation: String,
-    interviewType: {
+    status: {
       type: String,
-      enum: ['online', 'onsite', 'phone']
-    }
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending'
+    },
+    coverLetter: String,
+    resume: String
   }],
-  deadline: {
-    type: Date,
-    required: true
-  },
   status: {
     type: String,
-    enum: ['active', 'closed', 'draft'],
+    enum: ['active', 'closed', 'placed'],
     default: 'active'
+  },
+  deadline: {
+    type: Date,
+    required: [true, 'Please add an application deadline']
   },
   createdAt: {
     type: Date,
@@ -104,6 +78,9 @@ const JobSchema = new mongoose.Schema({
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
+// Add index for text search
+JobSchema.index({ title: 'text', description: 'text', company: 'text' });
 
 // Check if job posting is active
 JobSchema.methods.isActive = function() {

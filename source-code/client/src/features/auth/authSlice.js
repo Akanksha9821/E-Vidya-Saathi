@@ -9,20 +9,24 @@ const user = JSON.parse(localStorage.getItem('user'));
 const initialState = {
   user: user || null,
   isAuthenticated: !!user,
-  loading: false,
-  error: null
+  isLoading: false,
+  error: null,
+  isInitialized: false
 };
 
 // Register user
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData, { rejectWithValue }) => {
+  async (userData, thunkAPI) => {
     try {
       const response = await axios.post(`${API_URL}/api/auth/register`, userData);
-      localStorage.setItem('token', response.data.token);
+      if (response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed';
+      return thunkAPI.rejectWithValue(errorMessage);
     }
   }
 );
@@ -30,33 +34,42 @@ export const register = createAsyncThunk(
 // Login user
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue }) => {
+  async (userData, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, credentials);
-      localStorage.setItem('token', response.data.token);
+      const response = await axios.post(`${API_URL}/api/auth/login`, userData);
+      if (response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.message);
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || 'Login failed'
+      );
     }
   }
 );
+
+// Logout user
+export const logout = createAsyncThunk('auth/logout', async () => {
+  localStorage.removeItem('user');
+});
 
 // Get current user
 export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        return rejectWithValue('No token found');
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        return rejectWithValue('No user found');
       }
       const response = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${user.token}` }
       });
       return response.data;
     } catch (error) {
-      localStorage.removeItem('token');
-      return rejectWithValue(error.response.data.message);
+      localStorage.removeItem('user');
+      return rejectWithValue(error.response?.data?.message || 'Failed to get user');
     }
   }
 );
@@ -84,66 +97,77 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    logout: (state) => {
-      localStorage.removeItem('token');
-      state.user = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
-    },
     clearError: (state) => {
       state.error = null;
+    },
+    reset: (state) => {
+      state.isLoading = false;
+      state.error = null;
+    },
+    initialize: (state) => {
+      state.isInitialized = true;
     }
   },
   extraReducers: (builder) => {
     builder
       // Register
       .addCase(register.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        state.user = action.payload;
+        state.isInitialized = true;
       })
       .addCase(register.rejected, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.error = action.payload;
+        state.isInitialized = true;
       })
       // Login
       .addCase(login.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        state.user = action.payload;
+        state.isInitialized = true;
       })
       .addCase(login.rejected, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.error = action.payload;
+        state.isInitialized = true;
+      })
+      // Logout
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.isInitialized = true;
       })
       // Get current user
       .addCase(getCurrentUser.pending, (state) => {
-        state.loading = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(getCurrentUser.fulfilled, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.isAuthenticated = true;
         state.user = action.payload;
+        state.isInitialized = true;
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
-        state.loading = false;
+        state.isLoading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
         state.user = null;
+        state.isInitialized = true;
       });
   }
 });
 
-export const { logout, clearError } = authSlice.actions;
-
+export const { clearError, reset, initialize } = authSlice.actions;
 export default authSlice.reducer; 

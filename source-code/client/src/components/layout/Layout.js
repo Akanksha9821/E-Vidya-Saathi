@@ -111,7 +111,7 @@ const Layout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {user?.role.charAt(0).toUpperCase() + user?.role.slice(1)} Dashboard
+            {user?.role ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)} Dashboard` : 'Dashboard'}
           </Typography>
           <IconButton
             size="large"
@@ -122,7 +122,7 @@ const Layout = () => {
             color="inherit"
           >
             <Avatar sx={{ width: 32, height: 32 }}>
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </Avatar>
           </IconButton>
           <Menu

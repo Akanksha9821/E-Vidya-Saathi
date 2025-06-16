@@ -8,18 +8,28 @@ const sendEmail = require('../utils/sendEmail');
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, department } = req.body;
+    console.log('Registration request data:', { name, email, role, department });
 
     // Create user
     const user = await User.create({
       name,
       email,
       password,
-      role
+      role,
+      department
     });
 
     sendTokenResponse(user, 201, res);
   } catch (err) {
+    console.log('Registration error:', err);
+    if (err.name === 'ValidationError') {
+      const message = Object.values(err.errors).map(val => val.message)[0];
+      return next(new ErrorResponse(message, 400));
+    }
+    if (err.code === 11000) {
+      return next(new ErrorResponse('Email already exists', 400));
+    }
     next(err);
   }
 };
