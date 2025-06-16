@@ -5,37 +5,47 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { useSelector, useDispatch } from 'react-redux';
 import { getCurrentUser, initialize } from './features/auth/authSlice';
 
-// Layout Components
+// Layout
 import Layout from './components/layout/Layout';
+
+// Auth
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+
+// Dashboard
+import StudentDashboard from './pages/dashboard/StudentDashboard';
+import FacultyDashboard from './pages/dashboard/FacultyDashboard';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
+import Dashboard from './pages/dashboard/Dashboard';
+
+// Courses
+import Courses from './pages/courses/Courses';
+import CourseDetails from './pages/courses/CourseDetails';
+import AttendanceList from './pages/courses/AttendanceList';
+
+// Attendance
+import StudentAttendance from './pages/attendance/StudentAttendance';
+
+// Events
+import EventList from './pages/events/EventList';
+import EventDetails from './pages/events/EventDetails';
+
+// Placements
+import JobList from './pages/placements/JobList';
+import JobDetails from './pages/placements/JobDetails';
+
+// Matching
+import InterestPreferences from './pages/matching/InterestPreferences';
+import EventRecommendations from './pages/matching/EventRecommendations';
+
+// Private Route
 import PrivateRoute from './components/routing/PrivateRoute';
+import ProtectedRoute from './components/routing/ProtectedRoute';
 
-// Auth Components
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
+// Profile
+import Profile from './pages/profile/Profile';
 
-// Dashboard Components
-import Dashboard from './components/dashboard/Dashboard';
-import StudentDashboard from './components/dashboard/StudentDashboard';
-import FacultyDashboard from './components/dashboard/FacultyDashboard';
-import AdminDashboard from './components/dashboard/AdminDashboard';
-
-// Feature Components
-import Courses from './components/courses/Courses';
-import CourseDetails from './components/courses/CourseDetails';
-import Attendance from './components/attendance/Attendance';
-import Events from './components/events/Events';
-import EventDetails from './components/events/EventDetails';
-import Placements from './components/placements/Placements';
-import PlacementDetails from './components/placements/PlacementDetails';
-import AttendanceList from './components/attendance/AttendanceList';
-import StudentAttendance from './components/attendance/StudentAttendance';
-import EventList from './components/events/EventList';
-import JobList from './components/placements/JobList';
-import JobDetails from './components/placements/JobDetails';
-import InterestPreferences from './components/matching/InterestPreferences';
-import EventRecommendations from './components/matching/EventRecommendations';
-
-// Create theme
+// Theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -44,38 +54,27 @@ const theme = createTheme({
     secondary: {
       main: '#dc004e',
     },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 500,
-    },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 500,
-    },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 500,
-    },
   },
 });
 
 function App() {
-  const { isAuthenticated, user, isInitialized } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isInitialized, isLoading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(getCurrentUser());
-    dispatch(initialize());
+    const initAuth = async () => {
+      await dispatch(getCurrentUser());
+      dispatch(initialize());
+    };
+    initAuth();
   }, [dispatch]);
 
-  if (!isInitialized) {
-    return <div>Loading...</div>;
+  if (!isInitialized || isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   const getDashboard = () => {
@@ -99,34 +98,56 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
-          <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
+          <Route 
+            path="/login" 
+            element={!isAuthenticated ? <Login /> : <Navigate to="/" />} 
+          />
+          <Route 
+            path="/register" 
+            element={!isAuthenticated ? <Register /> : <Navigate to="/" />} 
+          />
 
           {/* Protected Routes */}
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={getDashboard()} />
+          <Route 
+            path="/" 
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             
             {/* Course Routes */}
-            <Route path="courses" element={<Courses />} />
-            <Route path="courses/:id" element={<CourseDetails />} />
-            <Route path="courses/:courseId/attendance" element={<AttendanceList />} />
+            <Route path="courses">
+              <Route index element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+              <Route path=":id" element={<ProtectedRoute><CourseDetails /></ProtectedRoute>} />
+              <Route path=":courseId/attendance" element={<ProtectedRoute><AttendanceList /></ProtectedRoute>} />
+            </Route>
             
             {/* Attendance Routes */}
-            <Route path="attendance" element={<StudentAttendance />} />
+            <Route path="attendance" element={<ProtectedRoute><StudentAttendance /></ProtectedRoute>} />
             
             {/* Event Routes */}
-            <Route path="events" element={<EventList />} />
-            <Route path="events/:eventId" element={<EventDetails />} />
+            <Route path="events">
+              <Route index element={<ProtectedRoute><EventList /></ProtectedRoute>} />
+              <Route path=":eventId" element={<ProtectedRoute><EventDetails /></ProtectedRoute>} />
+            </Route>
             
             {/* Placement Routes */}
-            <Route path="placements" element={<JobList />} />
-            <Route path="placements/:jobId" element={<JobDetails />} />
+            <Route path="placements">
+              <Route index element={<ProtectedRoute><JobList /></ProtectedRoute>} />
+              <Route path=":jobId" element={<ProtectedRoute><JobDetails /></ProtectedRoute>} />
+            </Route>
 
             {/* Matching Routes */}
             <Route path="matching">
-              <Route index element={<InterestPreferences />} />
-              <Route path="recommendations" element={<EventRecommendations />} />
+              <Route index element={<ProtectedRoute><InterestPreferences /></ProtectedRoute>} />
+              <Route path="recommendations" element={<ProtectedRoute><EventRecommendations /></ProtectedRoute>} />
             </Route>
+
+            {/* Profile Route */}
+            <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           </Route>
         </Routes>
       </Router>
