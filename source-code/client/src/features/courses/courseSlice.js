@@ -8,10 +8,7 @@ export const fetchCourses = createAsyncThunk(
   'courses/fetchCourses',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/courses`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(`${API_URL}/api/courses`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data.message);
@@ -23,13 +20,9 @@ export const createCourse = createAsyncThunk(
   'courses/createCourse',
   async (courseData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/api/courses`,
-        courseData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        courseData
       );
       return response.data;
     } catch (error) {
@@ -42,13 +35,9 @@ export const updateCourse = createAsyncThunk(
   'courses/updateCourse',
   async ({ id, courseData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.put(
         `${API_URL}/api/courses/${id}`,
-        courseData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        courseData
       );
       return response.data;
     } catch (error) {
@@ -61,10 +50,7 @@ export const deleteCourse = createAsyncThunk(
   'courses/deleteCourse',
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/courses/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`${API_URL}/api/courses/${id}`);
       return id;
     } catch (error) {
       return rejectWithValue(error.response.data.message);
@@ -76,13 +62,8 @@ export const enrollInCourse = createAsyncThunk(
   'courses/enrollInCourse',
   async (courseId, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/api/courses/${courseId}/enroll`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `${API_URL}/api/courses/${courseId}/enroll`
       );
       return response.data;
     } catch (error) {
@@ -95,13 +76,9 @@ export const addStudentToCourse = createAsyncThunk(
   'courses/addStudentToCourse',
   async ({ courseId, studentId }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/api/courses/${courseId}/students`,
-        { studentId },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { studentId }
       );
       return response.data;
     } catch (error) {
@@ -114,12 +91,8 @@ export const removeStudentFromCourse = createAsyncThunk(
   'courses/removeStudentFromCourse',
   async ({ courseId, studentId }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.delete(
-        `${API_URL}/api/courses/${courseId}/students/${studentId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `${API_URL}/api/courses/${courseId}/students/${studentId}`
       );
       return { courseId, studentId };
     } catch (error) {

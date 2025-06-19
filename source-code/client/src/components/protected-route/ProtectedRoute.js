@@ -4,10 +4,10 @@ import { useSelector } from 'react-redux';
 import Loading from '../loading/Loading';
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
-  const { user, isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  if (loading) {
+  if (isLoading) {
     return <Loading message="Checking authentication..." />;
   }
 

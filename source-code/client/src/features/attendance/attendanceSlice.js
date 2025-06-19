@@ -8,12 +8,10 @@ export const fetchAttendance = createAsyncThunk(
   'attendance/fetchAttendance',
   async ({ courseId, date }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.get(
         `${API_URL}/api/attendance/${courseId}`,
         {
-          params: { date },
-          headers: { Authorization: `Bearer ${token}` }
+          params: { date }
         }
       );
       return response.data;
@@ -27,13 +25,9 @@ export const markAttendance = createAsyncThunk(
   'attendance/markAttendance',
   async ({ courseId, date, attendanceData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/api/attendance/${courseId}`,
-        { date, attendanceData },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { date, attendanceData }
       );
       return response.data;
     } catch (error) {
@@ -46,13 +40,9 @@ export const updateAttendance = createAsyncThunk(
   'attendance/updateAttendance',
   async ({ courseId, date, attendanceData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.put(
         `${API_URL}/api/attendance/${courseId}`,
-        { date, attendanceData },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { date, attendanceData }
       );
       return response.data;
     } catch (error) {
@@ -65,7 +55,6 @@ export const submitExcuse = createAsyncThunk(
   'attendance/submitExcuse',
   async ({ courseId, date, reason, document }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('reason', reason);
       if (document) {
@@ -76,10 +65,7 @@ export const submitExcuse = createAsyncThunk(
         `${API_URL}/api/attendance/${courseId}/excuse`,
         formData,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+          'Content-Type': 'multipart/form-data'
         }
       );
       return response.data;
@@ -93,13 +79,9 @@ export const reviewExcuse = createAsyncThunk(
   'attendance/reviewExcuse',
   async ({ courseId, excuseId, status, comment }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.put(
         `${API_URL}/api/attendance/${courseId}/excuse/${excuseId}`,
-        { status, comment },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { status, comment }
       );
       return response.data;
     } catch (error) {
@@ -112,12 +94,10 @@ export const getAttendanceReport = createAsyncThunk(
   'attendance/getAttendanceReport',
   async ({ courseId, startDate, endDate }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.get(
         `${API_URL}/api/attendance/${courseId}/report`,
         {
-          params: { startDate, endDate },
-          headers: { Authorization: `Bearer ${token}` }
+          params: { startDate, endDate }
         }
       );
       return response.data;

@@ -20,15 +20,21 @@ dotenv.config();
 const app = express();
 
 // Security Middleware
-app.use(helmet()); // Set security HTTP headers
-app.use(mongoSanitize()); // Sanitize data
-app.use(xss()); // Prevent XSS attacks
-app.use(hpp()); // Prevent HTTP Parameter Pollution
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for development
+}));
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    status: 'error',
+    message: 'Too many requests from this IP, please try again later.'
+  }
 });
 app.use('/api', limiter);
 
@@ -39,7 +45,7 @@ app.use(cookieParser());
 
 // Enable CORS
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3004'],
+  origin: ['http://localhost:3000', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3002'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -52,6 +58,12 @@ app.use(compression());
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Test route
 app.get('/api/test', (req, res) => {
@@ -83,92 +95,70 @@ app.use('/api/jobs', require('./routes/job.routes'));
 app.use('/api/interests', require('./routes/interest.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
 
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  });
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
+// Connect to MongoDB and start server
+const startServer = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log('Connected to MongoDB');
-    // Start server
-    const startServer = (port) => {
-      return new Promise((resolve, reject) => {
-        console.log(`Attempting to start server on port ${port}...`);
-        const server = app.listen(port)
-          .on('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
-              const nextPort = parseInt(port) + 1;
-              if (nextPort > 65535) {
-                reject(new Error('No available ports found'));
-                return;
-              }
-              console.log(`Port ${port} is busy, trying ${nextPort}`);
-              resolve(startServer(nextPort));
-            } else {
-              console.error('Server error:', err);
-              reject(err);
-            }
-          })
-          .on('listening', () => {
-            console.log(`Server is running on port ${port}`);
-            console.log('Available routes:');
-            const printRoutes = (stack, prefix = '') => {
-              stack.forEach((r) => {
-                if (r.route) {
-                  // Direct route
-                  console.log(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${prefix}${r.route.path}`);
-                } else if (r.name === 'router') {
-                  // Mounted router
-                  const newPrefix = prefix + (r.regexp.source
-                    .replace('^\\/','/')
-                    .replace('\\/?(?=\\/|$)','')
-                    .replace(/\\\//g, '/'));
-                  printRoutes(r.handle.stack, newPrefix);
-                }
-              });
-            };
-            printRoutes(app._router.stack);
-            resolve(server);
-          });
-      });
-    };
 
-    startServer(process.env.PORT || 5000)
-      .then(server => {
-        // Handle unhandled promise rejections
-        process.on('unhandledRejection', (err) => {
-          console.error('Unhandled Rejection:', err);
-          // Close server & exit process
-          server.close(() => process.exit(1));
-        });
+    const port = process.env.PORT || 5000;
+    const server = app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+      console.log('Available routes:');
+      printRoutes(app._router.stack);
+    });
 
-        // Handle process termination
-        process.on('SIGTERM', () => {
-          console.log('SIGTERM received. Shutting down gracefully...');
-          server.close(() => {
-            console.log('Process terminated');
-            process.exit(0);
-          });
-        });
-      })
-      .catch(err => {
-        console.error('Server error:', err);
-        process.exit(1);
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err) => {
+      console.error('Unhandled Rejection:', err);
+      server.close(() => process.exit(1));
+    });
+
+    // Handle process termination
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received. Shutting down gracefully...');
+      server.close(() => {
+        console.log('Process terminated');
+        process.exit(0);
       });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    });
+
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
     process.exit(1);
-  });
+  }
+};
 
-// Add request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Helper function to print routes
+const printRoutes = (stack, prefix = '') => {
+  stack.forEach((r) => {
+    if (r.route) {
+      console.log(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${prefix}${r.route.path}`);
+    } else if (r.name === 'router') {
+      const newPrefix = prefix + (r.regexp.source
+        .replace('^\\/','/')
+        .replace('\\/?(?=\\/|$)','')
+        .replace(/\\\//g, '/'));
+      printRoutes(r.handle.stack, newPrefix);
+    }
+  });
+};
+
+// Start the server
+startServer();
 
 module.exports = app;

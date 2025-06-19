@@ -6,18 +6,19 @@ import theme from './theme';
 
 // Auth Pages
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
+import Welcome from './pages/Welcome';
 
 // Dashboard
 import Dashboard from './pages/dashboard/Dashboard';
+import StudentDashboard from './pages/dashboard/StudentDashboard';
+import FacultyDashboard from './pages/dashboard/FacultyDashboard';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
 
 // Layouts
-import Layout from './components/layout/Layout';
-import AuthLayout from './components/auth-layout/AuthLayout';
 import DashboardLayout from './components/dashboard-layout/DashboardLayout';
 
 // Protected Route
-import ProtectedRoute from './components/routing/ProtectedRoute';
+import ProtectedRoute from './components/protected-route/ProtectedRoute';
 
 function App() {
   return (
@@ -26,18 +27,38 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<Login />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Route>
+          <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-            </Route>
-          </Route>
+          {/* Protected Routes with Role-based Access */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/student/dashboard" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <DashboardLayout>
+                <StudentDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/faculty/dashboard" element={
+            <ProtectedRoute allowedRoles={['faculty']}>
+              <DashboardLayout>
+                <FacultyDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <DashboardLayout>
+                <AdminDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </ThemeProvider>

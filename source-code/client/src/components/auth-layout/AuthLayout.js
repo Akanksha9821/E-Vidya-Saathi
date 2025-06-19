@@ -12,6 +12,7 @@ function AuthLayout({ children }) {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'background.default',
+        p: { xs: 2, sm: 3, md: 4 },
       }}
     >
       <Container maxWidth="sm">
@@ -20,14 +21,20 @@ function AuthLayout({ children }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            mb: 4,
+            mb: { xs: 2, sm: 3, md: 4 },
           }}
         >
-          <SchoolIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+          <SchoolIcon 
+            sx={{ 
+              fontSize: { xs: 40, sm: 50, md: 60 }, 
+              color: 'primary.main', 
+              mb: { xs: 1, sm: 2 } 
+            }} 
+          />
           <Box
             component="h1"
             sx={{
-              fontSize: '2rem',
+              fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
               fontWeight: 'bold',
               color: 'primary.main',
               textAlign: 'center',
@@ -39,10 +46,11 @@ function AuthLayout({ children }) {
         <Paper
           elevation={3}
           sx={{
-            p: 4,
+            p: { xs: 3, sm: 4, md: 4 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            width: '100%',
           }}
         >
           {children}

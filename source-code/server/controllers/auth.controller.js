@@ -3,26 +3,31 @@ const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const sendEmail = require('../utils/sendEmail');
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = async (req, res, next) => {
+// @desc    Admin creates a user (student/faculty/admin)
+// @route   POST /api/auth/create-user
+// @access  Private/Admin
+exports.createUser = async (req, res, next) => {
   try {
     const { name, email, password, role, department } = req.body;
-    console.log('Registration request data:', { name, email, role, department });
+    
+    // Validate required fields
+    if (!name || !email || !password || !role || !department) {
+      return next(new ErrorResponse('All fields are required', 400));
+    }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role,
-      department
+    // Validate role
+    const validRoles = ['student', 'faculty', 'admin'];
+    if (!validRoles.includes(role)) {
+      return next(new ErrorResponse('Invalid role specified', 400));
+    }
+
+    const user = await User.create({ name, email, password, role, department });
+    
+    res.status(201).json({ 
+      status: 'success', 
+      data: user 
     });
-
-    sendTokenResponse(user, 201, res);
   } catch (err) {
-    console.log('Registration error:', err);
     if (err.name === 'ValidationError') {
       const message = Object.values(err.errors).map(val => val.message)[0];
       return next(new ErrorResponse(message, 400));
@@ -40,27 +45,45 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
-    // Validate email & password
+    
+    // Validate required fields
     if (!email || !password) {
       return next(new ErrorResponse('Please provide an email and password', 400));
     }
 
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    // Validate email format
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(email)) {
+      return next(new ErrorResponse('Please provide a valid email address', 400));
+    }
 
+    // Find user and include password for comparison
+    const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
       return next(new ErrorResponse('Invalid credentials', 401));
     }
 
-    // Check if password matches
+    // Check password
     const isMatch = await user.matchPassword(password);
-
     if (!isMatch) {
       return next(new ErrorResponse('Invalid credentials', 401));
     }
 
-    sendTokenResponse(user, 200, res);
+    // Generate JWT token with role
+    const token = user.getSignedJwtTokenWithRole();
+    
+    res.status(200).json({
+      status: 'success',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -72,6 +95,10 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
 
     res.status(200).json({
       status: 'success',
@@ -87,21 +114,36 @@ exports.getMe = async (req, res, next) => {
 // @access  Private
 exports.updateProfile = async (req, res, next) => {
   try {
-    const fieldsToUpdate = {
-      name: req.body.name,
-      email: req.body.email
-    };
+    const { name, email } = req.body;
+    
+    // Validate required fields
+    if (!name || !email) {
+      return next(new ErrorResponse('Name and email are required', 400));
+    }
+
+    const fieldsToUpdate = { name, email };
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
       new: true,
       runValidators: true
     });
 
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
     res.status(200).json({
       status: 'success',
       data: user
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const message = Object.values(err.errors).map(val => val.message)[0];
+      return next(new ErrorResponse(message, 400));
+    }
+    if (err.code === 11000) {
+      return next(new ErrorResponse('Email already exists', 400));
+    }
     next(err);
   }
 };
@@ -111,17 +153,39 @@ exports.updateProfile = async (req, res, next) => {
 // @access  Private
 exports.updatePassword = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('+password');
-
-    // Check current password
-    if (!(await user.matchPassword(req.body.currentPassword))) {
-      return next(new ErrorResponse('Password is incorrect', 401));
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return next(new ErrorResponse('Current password and new password are required', 400));
     }
 
-    user.password = req.body.newPassword;
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
+    // Check current password
+    if (!(await user.matchPassword(currentPassword))) {
+      return next(new ErrorResponse('Current password is incorrect', 401));
+    }
+
+    user.password = newPassword;
     await user.save();
 
-    sendTokenResponse(user, 200, res);
+    const token = user.getSignedJwtTokenWithRole();
+    
+    res.status(200).json({
+      status: 'success',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -132,7 +196,13 @@ exports.updatePassword = async (req, res, next) => {
 // @access  Public
 exports.forgotPassword = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    const { email } = req.body;
+    
+    if (!email) {
+      return next(new ErrorResponse('Email is required', 400));
+    }
+
+    const user = await User.findOne({ email });
 
     if (!user) {
       return next(new ErrorResponse('There is no user with that email', 404));
@@ -140,13 +210,10 @@ exports.forgotPassword = async (req, res, next) => {
 
     // Get reset token
     const resetToken = user.getResetPasswordToken();
-
     await user.save({ validateBeforeSave: false });
 
     // Create reset url
-    const resetUrl = `${req.protocol}://${req.get(
-      'host'
-    )}/api/auth/resetpassword/${resetToken}`;
+    const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/resetpassword/${resetToken}`;
 
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
 
@@ -157,7 +224,10 @@ exports.forgotPassword = async (req, res, next) => {
         message
       });
 
-      res.status(200).json({ status: 'success', data: 'Email sent' });
+      res.status(200).json({ 
+        status: 'success', 
+        data: 'Email sent' 
+      });
     } catch (err) {
       console.log(err);
       user.resetPasswordToken = undefined;
@@ -177,6 +247,12 @@ exports.forgotPassword = async (req, res, next) => {
 // @access  Public
 exports.resetPassword = async (req, res, next) => {
   try {
+    const { password } = req.body;
+    
+    if (!password) {
+      return next(new ErrorResponse('Password is required', 400));
+    }
+
     // Get hashed token
     const resetPasswordToken = crypto
       .createHash('sha256')
@@ -193,18 +269,30 @@ exports.resetPassword = async (req, res, next) => {
     }
 
     // Set new password
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    sendTokenResponse(user, 200, res);
+    const token = user.getSignedJwtTokenWithRole();
+    
+    res.status(200).json({
+      status: 'success',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      }
+    });
   } catch (err) {
     next(err);
   }
 };
 
-// @desc    Log user out / clear cookie
+// @desc    Logout user / clear cookie
 // @route   GET /api/auth/logout
 // @access  Private
 exports.logout = async (req, res, next) => {
@@ -217,29 +305,4 @@ exports.logout = async (req, res, next) => {
     status: 'success',
     data: {}
   });
-};
-
-// Get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res) => {
-  // Create token
-  const token = user.getSignedJwtToken();
-
-  const options = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true
-  };
-
-  if (process.env.NODE_ENV === 'production') {
-    options.secure = true;
-  }
-
-  res
-    .status(statusCode)
-    .cookie('token', token, options)
-    .json({
-      status: 'success',
-      token
-    });
 }; 
