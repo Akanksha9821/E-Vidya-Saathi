@@ -6,15 +6,8 @@ import {
   Grid,
   Typography,
   Link,
-  IconButton,
   Divider,
 } from '@mui/material';
-import {
-  Facebook as FacebookIcon,
-  Twitter as TwitterIcon,
-  Instagram as InstagramIcon,
-  LinkedIn as LinkedInIcon,
-} from '@mui/icons-material';
 
 function Footer() {
   const currentYear = new Date().getFullYear();
@@ -49,13 +42,6 @@ function Footer() {
     },
   ];
 
-  const socialLinks = [
-    { icon: <FacebookIcon />, url: 'https://facebook.com' },
-    { icon: <TwitterIcon />, url: 'https://twitter.com' },
-    { icon: <InstagramIcon />, url: 'https://instagram.com' },
-    { icon: <LinkedInIcon />, url: 'https://linkedin.com' },
-  ];
-
   return (
     <Box
       component="footer"
@@ -69,7 +55,7 @@ function Footer() {
       <Container maxWidth="lg">
         <Grid container spacing={4}>
           {sections.map((section) => (
-            <Grid item xs={12} sm={6} md={3} key={section.title}>
+            <Grid item xs={12} sm={6} md={4} key={section.title}>
               <Typography variant="h6" gutterBottom>
                 {section.title}
               </Typography>
@@ -89,25 +75,6 @@ function Footer() {
               </Box>
             </Grid>
           ))}
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="h6" gutterBottom>
-              Connect With Us
-            </Typography>
-            <Box>
-              {socialLinks.map((social, index) => (
-                <IconButton
-                  key={index}
-                  component="a"
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="inherit"
-                >
-                  {social.icon}
-                </IconButton>
-              ))}
-            </Box>
-          </Grid>
         </Grid>
         <Divider sx={{ my: 3, bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
         <Box
