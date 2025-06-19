@@ -20,6 +20,28 @@ import {
 } from '@mui/icons-material';
 import { logout } from '../../features/auth/authSlice';
 
+// Helper to get initials from name
+function getInitials(name) {
+  if (!name) return '';
+  const parts = name.split(' ');
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Helper to get a color from name
+function stringToColor(string) {
+  let hash = 0;
+  for (let i = 0; i < string.length; i++) {
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ('00' + value.toString(16)).slice(-2);
+  }
+  return color;
+}
+
 function Header({ onMenuClick }) {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -57,6 +79,7 @@ function Header({ onMenuClick }) {
 
   const settings = [
     { title: 'Profile', path: '/profile' },
+    { title: 'Reset Password', path: '/reset-password' },
     { title: 'Settings', path: '/settings' },
     { title: 'Logout', action: handleLogout },
   ];
@@ -177,7 +200,17 @@ function Header({ onMenuClick }) {
               <>
                 <Tooltip title="Open settings">
                   <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                    <Avatar alt={user?.name} src={user?.avatar} />
+                    <Avatar
+                      alt={user?.name}
+                      src={user?.avatar}
+                      sx={!user?.avatar ? {
+                        bgcolor: stringToColor(user?.name || 'U'),
+                        color: '#fff',
+                        fontWeight: 700
+                      } : {}}
+                    >
+                      {!user?.avatar && getInitials(user?.name)}
+                    </Avatar>
                   </IconButton>
                 </Tooltip>
                 <Menu
@@ -201,11 +234,8 @@ function Header({ onMenuClick }) {
                       key={setting.title}
                       onClick={() => {
                         handleCloseUserMenu();
-                        if (setting.action) {
-                          setting.action();
-                        } else {
-                          navigate(setting.path);
-                        }
+                        if (setting.action) setting.action();
+                        else if (setting.path) navigate(setting.path);
                       }}
                     >
                       <Typography textAlign="center">{setting.title}</Typography>

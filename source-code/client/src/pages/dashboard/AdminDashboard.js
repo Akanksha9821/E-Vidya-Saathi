@@ -26,8 +26,21 @@ import {
   AdminPanelSettings,
   Security,
   Analytics,
-  Notifications
+  Notifications,
+  HealthAndSafety
 } from '@mui/icons-material';
+
+const quotes = [
+  "Success is not the key to happiness. Happiness is the key to success.",
+  "The only way to do great work is to love what you do.",
+  "Believe you can and you're halfway there.",
+  "Opportunities don't happen, you create them.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "The future depends on what you do today.",
+  "Dream big and dare to fail.",
+  "Your limitation—it's only your imagination."
+];
+const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 
 export default function AdminDashboard() {
   const { user } = useSelector((state) => state.auth);
@@ -48,6 +61,13 @@ export default function AdminDashboard() {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Motivational Quote */}
+      <Paper elevation={2} sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%)' }}>
+        <Typography variant="subtitle1" align="center" sx={{ fontStyle: 'italic', color: 'primary.main' }}>
+          "{quoteOfTheDay}"
+        </Typography>
+      </Paper>
+
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -57,6 +77,26 @@ export default function AdminDashboard() {
           Monitor institutional performance, manage users, and oversee academic operations.
         </Typography>
       </Box>
+
+      {/* Campus Health Badge */}
+      <Paper sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Campus Health
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Overall institutional performance this week
+            </Typography>
+          </Box>
+          <Chip 
+            label="95% Attendance" 
+            color="success" 
+            icon={<HealthAndSafety />}
+            sx={{ fontWeight: 'bold' }}
+          />
+        </Box>
+      </Paper>
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

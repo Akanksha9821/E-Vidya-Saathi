@@ -14,7 +14,8 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
-  Button
+  Button,
+  LinearProgress
 } from '@mui/material';
 import {
   School,
@@ -28,6 +29,18 @@ import {
   Event,
   Notifications
 } from '@mui/icons-material';
+
+const quotes = [
+  "Success is not the key to happiness. Happiness is the key to success.",
+  "The only way to do great work is to love what you do.",
+  "Believe you can and you're halfway there.",
+  "Opportunities don't happen, you create them.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "The future depends on what you do today.",
+  "Dream big and dare to fail.",
+  "Your limitation—it's only your imagination."
+];
+const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 
 export default function FacultyDashboard() {
   const { user } = useSelector((state) => state.auth);
@@ -72,8 +85,19 @@ export default function FacultyDashboard() {
     }
   ];
 
+  const totalSubmissions = pendingGrading.reduce((sum, assignment) => sum + assignment.submissions, 0);
+  const totalStudents = pendingGrading.reduce((sum, assignment) => sum + assignment.totalStudents, 0);
+  const gradingProgress = Math.round((totalSubmissions / totalStudents) * 100);
+
   return (
     <Box sx={{ p: 3 }}>
+      {/* Motivational Quote */}
+      <Paper elevation={2} sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%)' }}>
+        <Typography variant="subtitle1" align="center" sx={{ fontStyle: 'italic', color: 'primary.main' }}>
+          "{quoteOfTheDay}"
+        </Typography>
+      </Paper>
+
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -171,6 +195,36 @@ export default function FacultyDashboard() {
         </Grid>
       </Grid>
 
+      {/* Assignment Grading Progress Badge */}
+      <Paper sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Assignment Grading Progress
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {totalSubmissions}/{totalStudents} assignments submitted
+            </Typography>
+          </Box>
+          <Chip 
+            label={`${gradingProgress}% Complete`} 
+            color={gradingProgress >= 80 ? 'success' : gradingProgress >= 60 ? 'warning' : 'error'} 
+            icon={<Grade />}
+            sx={{ fontWeight: 'bold' }}
+          />
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Progress: {totalSubmissions} out of {totalStudents} assignments graded
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={gradingProgress} 
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
+      </Paper>
+
       {/* Main Content */}
       <Grid container spacing={3}>
         {/* Teaching Courses */}
@@ -212,7 +266,7 @@ export default function FacultyDashboard() {
                     </Typography>
                   </Box>
                   
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
                       {course.room}

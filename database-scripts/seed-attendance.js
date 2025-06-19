@@ -1,70 +1,41 @@
-const Attendance = require("../source-code/server/models/Attendance");
-const Course = require("../source-code/server/models/Course");
-const User = require("../source-code/server/models/User");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+dotenv.config({ path: require('path').resolve(__dirname, '../source-code/server/.env') });
 
-module.exports = async () => {
+const MONGO_URI = process.env.MONGO_URI;
+
+const attendanceSchema = new mongoose.Schema({}, { strict: false, collection: 'attendance' });
+const Attendance = mongoose.model('Attendance', attendanceSchema);
+
+async function seedAttendance() {
   try {
+    await mongoose.connect(MONGO_URI);
+    console.log("Connected to MongoDB Atlas");
+
     await Attendance.deleteMany();
-    console.log("🗑️ Cleared existing attendance records");
 
-    // Get courses and students
-    const courses = await Course.find().populate('enrolledStudents');
-    const studentUsers = await User.find({ role: "student" });
-
-    if (courses.length === 0) {
-      throw new Error("No courses found. Please seed courses first.");
-    }
-
-    if (studentUsers.length === 0) {
-      throw new Error("No students found. Please seed users first.");
-    }
-
-    const attendanceRecords = [];
-
-    // Generate attendance records for the last 30 days
-    for (let i = 0; i < 30; i++) {
+    const student = "Student One";
+    const courses = ["Data Structures", "Operating Systems"];
+    const records = [];
+    for (let i = 0; i < 10; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-
-      // Skip weekends
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-
-      courses.forEach(course => {
-        course.enrolledStudents.forEach(student => {
-          // Generate realistic attendance patterns
-          const isPresent = Math.random() > 0.15; // 85% attendance rate
-          
-          attendanceRecords.push({
-            student: student._id,
-            course: course._id,
-            date: date,
-            status: isPresent ? 'present' : 'absent',
-            markedBy: course.faculty,
-            remarks: isPresent ? 'Present' : 'Absent without prior notice',
-            timestamp: new Date(date.getTime() + Math.random() * 24 * 60 * 60 * 1000) // Random time during the day
-          });
+      for (const course of courses) {
+        records.push({
+          student,
+          course,
+          date,
+          status: Math.random() > 0.2 ? 'present' : 'absent',
         });
-      });
+      }
     }
-
-    await Attendance.insertMany(attendanceRecords);
-    console.log("✅ Seeded attendance records successfully");
-    console.log(`📊 Created ${attendanceRecords.length} attendance records`);
-    
-    // Calculate and display attendance statistics
-    const totalRecords = attendanceRecords.length;
-    const presentRecords = attendanceRecords.filter(record => record.status === 'present').length;
-    const attendanceRate = ((presentRecords / totalRecords) * 100).toFixed(1);
-    
-    console.log(`📈 Attendance Statistics:`);
-    console.log(`   - Total Records: ${totalRecords}`);
-    console.log(`   - Present: ${presentRecords}`);
-    console.log(`   - Absent: ${totalRecords - presentRecords}`);
-    console.log(`   - Overall Attendance Rate: ${attendanceRate}%`);
-    
-    return attendanceRecords;
-  } catch (error) {
-    console.error("❌ Error seeding attendance:", error);
-    throw error;
+    await Attendance.insertMany(records);
+    console.log("✅ Attendance seeded successfully");
+    process.exit();
+  } catch (err) {
+    console.error("❌ Seeding failed:", err);
+    process.exit(1);
   }
-}; 
+}
+
+seedAttendance(); 

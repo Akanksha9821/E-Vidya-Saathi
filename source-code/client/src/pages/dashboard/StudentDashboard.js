@@ -25,8 +25,21 @@ import {
   CheckCircle,
   Schedule,
   LocationOn,
-  CalendarToday
+  CalendarToday,
+  Work
 } from '@mui/icons-material';
+
+const quotes = [
+  "Success is not the key to happiness. Happiness is the key to success.",
+  "The only way to do great work is to love what you do.",
+  "Believe you can and you're halfway there.",
+  "Opportunities don't happen, you create them.",
+  "Don't watch the clock; do what it does. Keep going.",
+  "The future depends on what you do today.",
+  "Dream big and dare to fail.",
+  "Your limitation—it's only your imagination."
+];
+const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 
 export default function StudentDashboard() {
   const { user } = useSelector((state) => state.auth);
@@ -71,6 +84,13 @@ export default function StudentDashboard() {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Motivational Quote */}
+      <Paper elevation={2} sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%)' }}>
+        <Typography variant="subtitle1" align="center" sx={{ fontStyle: 'italic', color: 'primary.main' }}>
+          "{quoteOfTheDay}"
+        </Typography>
+      </Paper>
+
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -168,6 +188,36 @@ export default function StudentDashboard() {
         </Grid>
       </Grid>
 
+      {/* Placement Status Badge */}
+      <Paper sx={{ p: 2, mb: 3, background: 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Placement Status
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Track your job application progress
+            </Typography>
+          </Box>
+          <Chip 
+            label="Shortlisted" 
+            color="warning" 
+            icon={<Work />}
+            sx={{ fontWeight: 'bold' }}
+          />
+        </Box>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Progress: Applied → Shortlisted → Interview → Placed
+          </Typography>
+          <LinearProgress 
+            variant="determinate" 
+            value={50} 
+            sx={{ height: 8, borderRadius: 4 }}
+          />
+        </Box>
+      </Paper>
+
       {/* Main Content */}
       <Grid container spacing={3}>
         {/* Enrolled Courses */}
@@ -209,7 +259,7 @@ export default function StudentDashboard() {
                     </Typography>
                   </Box>
                   
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
                       {course.room}
